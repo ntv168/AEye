@@ -8,10 +8,11 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
-public abstract class ListeningActivity extends Activity implements IVoiceControl {
+public abstract class ListeningActivity extends AppCompatActivity implements IVoiceControl {
 
 	protected SpeechRecognizer sr;
 	protected Context context;

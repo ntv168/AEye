@@ -60,6 +60,9 @@ import android.widget.TextView;
 import com.example.sam.aeye.App;
 import com.example.sam.aeye.R;
 import com.example.sam.aeye.utils.StorageHelper;
+import com.example.sam.aeye.utils.VoiceUtils;
+import com.example.sam.aeye.voice.ListeningActivity;
+import com.example.sam.aeye.voice.VoiceRecognitionListener;
 import com.microsoft.projectoxford.face.FaceServiceClient;
 import com.microsoft.projectoxford.face.contract.CreatePersonResult;
 
@@ -72,7 +75,7 @@ import java.util.Set;
 import java.util.UUID;
 
 
-public class PersonActivity extends AppCompatActivity {
+public class PersonActivity extends ListeningActivity {
     // Background task of adding a person to person group.
     class AddPersonTask extends AsyncTask<String, String, String> {
         // Indicate the next step is to add face in this person, or finish editing this person.
@@ -300,11 +303,24 @@ public class PersonActivity extends AppCompatActivity {
 
     // Progress dialog popped up when communicating with server.
     ProgressDialog progressDialog;
+    boolean read = false;
+    private  void showReply(String sentenceReply){
+        VoiceUtils.speak(sentenceReply);
+        read = true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person);
+
+        showReply("quản lý người quen");
+
+        if (read) {
+            context = getApplicationContext(); // Needs to be set
+            VoiceRecognitionListener.getInstance().setListener(this); // Here we set the current listener
+            startListening(); // starts listening
+        }
 
 
         Bundle bundle = getIntent().getExtras();
@@ -328,6 +344,11 @@ public class PersonActivity extends AppCompatActivity {
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setTitle(getString(R.string.progress_dialog_title));
+    }
+
+    @Override
+    public void processVoiceCommands(String... voiceCommands) {
+
     }
 
     private void initializeGridView() {

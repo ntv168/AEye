@@ -354,12 +354,12 @@ public final class FaceTrackerActivity extends ListeningActivity {
         protected void onPostExecute(IdentifyResult[] result) {
             long endidentify= System.currentTimeMillis();
             Log.d("----------------", "time identity: ------------- " + (endidentify - startidentify));
-
+            String message = "Cẩn thận có người phía trước";
             // Show the result on screen when detection is done.
             // Set the information about the detection result.
             if (result != null) {
                 Toast.makeText(FaceTrackerActivity.this, ""+ (endidentify - startidentify), Toast.LENGTH_LONG).show();
-                String message = "";
+
                 Boolean hasAqua = false;
                 int stranger = 0;
 
@@ -374,7 +374,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
                             }
-                            message += personName;
+                            message  += "Xin chào,"   + personName;
                             hasAqua = true;
                         } else {
                             stranger++;
@@ -383,16 +383,18 @@ public final class FaceTrackerActivity extends ListeningActivity {
                         stranger++;
                     }
                 }
-                if (stranger > 0 && hasAqua) {
-                    message += " và " + stranger + "người lạ";
-                } if (stranger > 0 && !hasAqua) {
-                    message += "Có" + stranger + "người lạ";
+//                if (stranger > 0 && hasAqua) {
+//                    message += " và " + stranger + "người lạ";}
+                 if (stranger > 0 && !hasAqua) {
+                    message = "Cẩn thận có người phía trước";
                 }
 
-                showReply(message);
-                Toast.makeText(FaceTrackerActivity.this, "---------" +message, Toast.LENGTH_SHORT).show();
+
 
             }
+
+            showReply(message);
+            Toast.makeText(FaceTrackerActivity.this, message, Toast.LENGTH_SHORT).show();
         }
 
     }

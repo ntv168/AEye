@@ -54,7 +54,7 @@ public class MainActivity extends ListeningActivity{
         if (voiceCommands[0].contains("người")) {
             startActivity(new Intent(this, PersonGroupActivity.class));
         }
-        if (voiceCommands[0].contains("nhận dạng")) {
+        if (voiceCommands[0].contains("nhận ")) {
             startActivity(new Intent(this, FaceTrackerActivity.class));
         }
         restartListeningService();

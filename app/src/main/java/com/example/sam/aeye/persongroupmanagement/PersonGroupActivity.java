@@ -264,7 +264,6 @@ public class PersonGroupActivity extends ListeningActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person_group);
 
-
         showReply("quản lý người quen");
 
         if (read) {
@@ -311,6 +310,9 @@ public class PersonGroupActivity extends ListeningActivity {
         Toast.makeText(context, voiceCommands[0], Toast.LENGTH_SHORT).show();
         if (voiceCommands[0].toLowerCase().contains("về")) {
             finish();
+        }
+        if (voiceCommands[0].toLowerCase().contains("tạo")) {
+            startActivity(new Intent(context,PersonActivity.class));
         }
         restartListeningService();
     }

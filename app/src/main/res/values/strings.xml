@@ -1,0 +1,112 @@
+<resources>
+    <string name="app_name">AEye</string>
+
+    <string name="subscription_key">9a9dd0aa70de4a79ad2aedee1fea7c05</string>
+    <string name="endpoint">https://westcentralus.api.cognitive.microsoft.com/face/v1.0</string>
+
+    <!-- Main activity -->
+    <string name="detection">Detection</string>
+    <string name="face_verification">Face to Face Verification</string>
+    <string name="person_verification">Face to Person Verification</string>
+    <string name="verification">Verification</string>
+    <string name="identification">Identification</string>
+    <string name="grouping">Grouping</string>
+    <string name="find_similar_faces">Find Similar Faces</string>
+    <string name="detection_description">Detect faces, face landmarks, pose, smile, glasses, gender, and age.</string>
+    <string name="verification_description">Authentication between two faces or between a face and a person.</string>
+    <string name="grouping_description">Group faces based on similarity.</string>
+    <string name="find_similar_face_description">Search for similar-looking faces.</string>
+    <string name="identification_description">Identify the person from a face.</string>
+
+    <!-- Tips to get subscription key shown on main activity-->
+    <string name="add_subscription_key_tip_title">Subscription Key is Needed</string>
+    <string name="add_subscription_key_tip">Please put your subscription key with its corresponding endpoint to source file \"app/res/values/strings.xml\" to enable Face API calls.</string>
+
+    <!-- Detection activity -->
+    <string name="image">Image:</string>
+    <string name="select_image">Select\nImage</string>
+    <string name="result">Result:</string>
+    <string name="detect">Detect</string>
+
+    <!-- Verification activity -->
+    <string name="verify">Verify</string>
+    <string name="face_0">Face0:</string>
+    <string name="face_1">Face1:</string>
+    <string name="manage_persons">Manage\nPersons</string>
+    <string name="verification_menu">Verification\nMenu</string>
+
+    <!-- Verification activity -->
+    <string name="face">Face:</string>
+    <string name="group">Group</string>
+
+    <!-- Identification activity -->
+    <string name="identify">Identify</string>
+    <string name="manage_person_groups">Manage\nPerson\nGroups</string>
+    <string name="person_groups">Person Groups</string>
+    <string name="target_image">Target image</string>
+    <string name="faces">Faces in image</string>
+
+    <!-- Person group management activities -->
+    <string name="delete">Xóa</string>
+    <string name="done_and_save">Lưu</string>
+
+    <string name="person_group_list">Person Group List</string>
+    <string name="person_group_list_tip">- Tap on a group to edit.\n- Long tap to delete.</string>
+    <string name="add_person_group">Add Person Group</string>
+
+    <string name="person_group">Person Group</string>
+    <string name="person_group_tip">- Tap on a person to edit.\n- Long press to delete.</string>
+    <string name="person_group_name">Nhóm người thân</string>
+    <string name="type_in_person_group_name_tip">Name (within 30 characters)</string>
+    <string name="add_person">Add Person</string>
+
+    <string name="person">Person</string>
+    <string name="persons">Persons</string>
+    <string name="person_tip">- Bấm giữ để xóa mặt.</string>
+    <string name="type_in_person_name_tip">Tên từ 0 - 30 chữ cái</string>
+    <string name="add_face">Add Face</string>
+    <string name="person_name">Tên: </string>
+    <string name="add_face_to_person">Add Faces To Person</string>
+    <string name="select_face_tip">Vui lòng chọn mặt(Nếu có) để thêm vào.</string>
+
+    <!-- Find similar faces and grouping activity -->
+    <string name="zero_face">Face list: 0 faces in total</string>
+    <string name="target_face">Target face:</string>
+    <string name="all_faces">All Faces:</string>
+    <string name="add_faces">Add\nFaces</string>
+    <string name="similar_face_description">Finding 4 matchFace faces...</string>
+
+    <!-- Common in all activities -->
+    <string name="progress_dialog_title">Please wait</string>
+    <string name="view_log">View Log</string>
+
+    <!-- Select image activity -->
+    <string name="select_an_image">Chọn ảnh</string>
+    <string name="take_photo">Chụp ảnh</string>
+    <string name="select_image_in_album">Lấy hình từ thư viện</string>
+
+    <!-- Logs -->
+    <string name="log">Log:</string>
+    <string name="detection_log">Detection Log</string>
+    <string name="verification_log">Verification Log</string>
+    <string name="find_similar_face_log">Find Similar Face Log</string>
+    <string name="grouping_log">Grouping Log</string>
+    <string name="identification_log">Identification Log</string>
+
+    <!-- Warning messages -->
+    <string name="person_name_empty_warning_message">Vui lòng nhập tên người</string>
+    <string name="no_face_to_group">Không có bất kỳ mặt nào</string>
+    <string name="no_person_group_selected_for_identification_warning">không có người nào được chọn</string>
+    <string name="face_cannot_be_identified">Người lạ</string>
+    <string name="user_provided_person_name">Tên</string>
+    <string name="user_provided_description_data">Thông tin liên quan</string>
+    <string name="user_provided_person_group_name">Tên nhóm</string>
+    <string name="user_provided_person_group_description_data">Thông tin liên quan</string>
+
+
+    <!-- face tracker google -->
+    <string name="ok">OK</string>
+    <string name="permission_camera_rationale">Yêu cầu kết nối với camera</string>
+    <string name="no_camera_permission">Ứng dụng dừng đã dừng vì không được cấp quyền camera.</string>
+    <string name="low_storage_error">nhận diện người không thể thực hiện được vì bộ nhớ máy sắp hết</string>
+</resources>

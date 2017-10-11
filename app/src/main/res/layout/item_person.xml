@@ -1,0 +1,96 @@
+<!-- Copyright (c) Microsoft. All rights reserved. -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+
+    android:theme="@style/layouttheme"
+    android:weightSum="10">
+
+    <!--<ImageView-->
+    <!--android:id="@+id/image_person"-->
+    <!--android:layout_width="0dp"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_weight="2"-->
+    <!--android:adjustViewBounds="true"-->
+    <!--android:scaleType="fitCenter"-->
+    <!--android:src="@drawable/select_image"-->
+    <!--android:layout_marginRight="10dp"/>-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="10dp"
+        android:weightSum="10">
+
+
+        <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/image_person"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_marginRight="10dp"
+            android:layout_weight="2"
+            android:src="@drawable/select_image"
+            app:civ_border_color="#FFFFFFFF"
+            app:civ_border_width="2dp" />
+
+
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_weight="7"
+            android:orientation="vertical"
+            android:weightSum="2">
+
+            <TextView
+                android:id="@+id/text_person"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentStart="true"
+                android:layout_weight="1"
+                android:gravity="bottom|left|center"
+                android:text="ten nguoi"
+                android:textSize="18dp" />
+
+            <TextView
+                android:id="@+id/number_picture"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentStart="true"
+                android:layout_weight="1"
+                android:gravity="top|left|center"
+                android:text="so anh"
+                android:textColor="#80FFFFFF" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txt_delete_person"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/image_person"
+            android:layout_alignRight="@id/image_person"
+            android:layout_alignTop="@id/image_person"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:textSize="25dp"
+            android:text="x"
+            />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1AFFFFFF"/>
+</LinearLayout>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.sam.aeye.facetracker;
+package com.example.sam.aeye.photo;
 
 import android.Manifest;
 import android.app.Activity;
@@ -30,11 +30,12 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,7 +44,7 @@ import com.example.sam.aeye.R;
 import com.example.sam.aeye.camera.CameraConfig;
 import com.example.sam.aeye.camera.CameraSourcePreview;
 import com.example.sam.aeye.camera.GraphicOverlay;
-import com.example.sam.aeye.persongroupmanagement.PersonGroupActivity;
+import com.example.sam.aeye.persongroupmanagement.PersonActivity;
 import com.example.sam.aeye.utils.ImageHelper;
 import com.example.sam.aeye.utils.StorageHelper;
 import com.example.sam.aeye.utils.VoiceUtils;
@@ -57,6 +58,8 @@ import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 import com.microsoft.projectoxford.face.FaceServiceClient;
+import com.microsoft.projectoxford.face.contract.AddPersistedFaceResult;
+import com.microsoft.projectoxford.face.contract.CreatePersonResult;
 import com.microsoft.projectoxford.face.contract.IdentifyResult;
 import com.microsoft.projectoxford.face.contract.TrainingStatus;
 
@@ -68,6 +71,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -77,7 +81,7 @@ import java.util.UUID;
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
  * overlay graphics to indicate the position, size, and ID of each face.
  */
-public final class FaceTrackerActivity extends ListeningActivity {
+public final class TakePhotoActivity extends ListeningActivity {
     private static final String TAG = "FaceTracker";
 
     private CameraSource mCameraSource = null;
@@ -90,6 +94,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
     private static final int RC_HANDLE_GMS = 9001;
     // permission request codes need to be < 256
     private static final int RC_HANDLE_CAMERA_PERM = 2;
+    ImageView iv_person;
 
     //==============================================================================================
     // Activity Methods
@@ -105,12 +110,13 @@ public final class FaceTrackerActivity extends ListeningActivity {
     String mPersonGroupId;
     ProgressDialog progressDialog;
 
+
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        setContentView(R.layout.activity_face_tracker);
+        setContentView(R.layout.activity_take_photo);
 
-        showReply("Sẵn sàng");
+        showReply("Xin tiến sát lại điện thoại");
 
         if (read) {
             context = getApplicationContext(); // Needs to be set
@@ -118,8 +124,10 @@ public final class FaceTrackerActivity extends ListeningActivity {
             startListening(); // starts listening
         }
 
+        iv_person = (ImageView) findViewById(R.id.iv_view);
 
-        mPersonGroupId = StorageHelper.getPersonGroupId("nguoinha", FaceTrackerActivity.this);
+
+        mPersonGroupId = "29f1ccf6-16a3-4e09-95c7-24e5e31a2acf";
         detecting= false;
 
         progressDialog = new ProgressDialog(this);
@@ -138,12 +146,14 @@ public final class FaceTrackerActivity extends ListeningActivity {
         }
 
 
+
+
         mCallBack = new CameraSource.PictureCallback() {
             @Override
             public void onPictureTaken(byte[] data) {
-//                Toast.makeText(FaceTrackerActivity.this, "take a picture", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(TakePhotoActivity.this, "take a picture", Toast.LENGTH_SHORT).show();
 
-                FaceTrackerActivity.this.DETECT_RUNNING = true;
+                TakePhotoActivity.this.DETECT_RUNNING = true;
                 showMessage("camera data length: "+ data.length);
 
                 //Rezise bitmap
@@ -211,6 +221,9 @@ public final class FaceTrackerActivity extends ListeningActivity {
         new DetectionTask().execute(inputStream);
     }
 
+    com.microsoft.projectoxford.face.contract.Face personNewFace;
+    String newPersonName;
+
     private class DetectionTask extends AsyncTask<InputStream, String, com.microsoft.projectoxford.face.contract.Face[]> {
         long startdetect = System.currentTimeMillis();
         @Override
@@ -248,153 +261,25 @@ public final class FaceTrackerActivity extends ListeningActivity {
 
         @Override
         protected void onPostExecute(com.microsoft.projectoxford.face.contract.Face[] result) {
-            progressDialog.dismiss();
-            long enddetect= System.currentTimeMillis();
-            Log.d("--------------", "time detect --------------- " + (enddetect - startdetect));
-
             if (result != null) {
+                Log.e(TAG, "onPostExecute: " + result.length);
                 // Set the adapter of the ListView which contains the details of detectingfaces.
                 List<com.microsoft.projectoxford.face.contract.Face> faces = Arrays.asList(result);
-
-
-                if (result.length == 0) {
-                    detecting= false;
-                    setInfo("No faces detected!");
-                    FaceTrackerActivity.this.DETECT_RUNNING = false;
+                if (faces.size() < 2) {
+                    mPreview.setVisibility(View.GONE);
+                    personNewFace = faces.get(0);
+                    showReply("Bạn có muốn lưu lại người này vào hệ thống không");
+                    iv_person.setImageBitmap(mBitmap);
+                    iv_person.setVisibility(View.VISIBLE);
                 } else {
-                    detecting= true;
-
-                    // Called identify after detection.
-                    if (detecting&& mPersonGroupId != null) {
-                        // Start a background task to identify faces in the image.
-                        List<UUID> faceIds = new ArrayList<>();
-                        for (com.microsoft.projectoxford.face.contract.Face face:  faces) {
-                            faceIds.add(face.faceId);
-
-                            Log.d(TAG, "------------------------: " + face.faceId.toString());
-                        }
-
-
-                        new IdentificationTask(mPersonGroupId).execute(
-                                faceIds.toArray(new UUID[faceIds.size()]));
-                        Log.d("-------", "identify: facezise" + faceIds.size());
-                        FaceTrackerActivity.this.DETECT_RUNNING = false;
-                    } else {
-                        // Not detectingor person group exists.
-                        FaceTrackerActivity.this.DETECT_RUNNING = false;
-                        setInfo("Please select an image and create a person group first.");
-                    }
+                    showReply("Xin vui lòng chỉ một người đứng trước điện thoại");
+                    DETECT_RUNNING = false;
                 }
             } else {
-                detecting= false;
-                ;
+                showReply("Không thấy rỏ mặt xin thử lại");
+                DETECT_RUNNING = false;
             }
 
-        }
-
-    }
-
-    private class IdentificationTask extends AsyncTask<UUID, String, IdentifyResult[]> {
-        String mPersonGroupId;
-        long startidentify = System.currentTimeMillis();
-        IdentificationTask(String personGroupId) {
-            this.mPersonGroupId = personGroupId;
-            Log.d("--------", "IdentificationTask: " + personGroupId);
-        }
-
-        @Override
-        protected IdentifyResult[] doInBackground(UUID... params) {
-            String logString = "Request: Identifying faces ";
-            for (UUID faceId: params) {
-                logString += faceId.toString() + ", ";
-            }
-            logString += " in group " + mPersonGroupId;
-            Log.d("--------", "IdentificationTask: " + mPersonGroupId);
-            // Get an instance of face service client to detect faces in image.
-            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
-            try{
-                publishProgress("Getting person group status...");
-
-                TrainingStatus trainingStatus = faceServiceClient.getPersonGroupTrainingStatus(
-                        this.mPersonGroupId);     /* personGroupId */
-
-                Log.d("--------", "trainingStatus: " + trainingStatus);
-
-                if (trainingStatus.status != TrainingStatus.Status.Succeeded) {
-                    publishProgress("Person group training status is " + trainingStatus.status);
-                    return null;
-                }
-
-                publishProgress("Identifying...");
-
-                // Start identification.
-                return faceServiceClient.identity(
-                        this.mPersonGroupId,   /* personGroupId */
-                        params,                  /* faceIds */
-                        1);  /* maxNumOfCandidatesReturned */
-            }  catch (Exception e) {
-
-                publishProgress(e.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPreExecute() {
-//
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            // Show the status of background detection task on screen.a
-
-        }
-
-        @Override
-        protected void onPostExecute(IdentifyResult[] result) {
-            long endidentify= System.currentTimeMillis();
-            Log.d("----------------", "time identity: ------------- " + (endidentify - startidentify));
-            String message = "";
-            // Show the result on screen when detection is done.
-            // Set the information about the detection result.
-            if (result != null) {
-                Toast.makeText(FaceTrackerActivity.this, ""+ (endidentify - startidentify), Toast.LENGTH_LONG).show();
-
-                Boolean hasAqua = false;
-                int stranger = 0;
-
-                for (IdentifyResult identifyResult: result) {
-                    if (identifyResult.candidates.size() > 0) {
-                        if (identifyResult.candidates.get(0).confidence > 0.65) {
-                            String personId = identifyResult.candidates.get(0).personId.toString();
-                            String personName = StorageHelper.getPersonName(
-                                    personId, mPersonGroupId, FaceTrackerActivity.this);
-                            try {
-                                personName = URLDecoder.decode(personName,"UTF-8");
-                            } catch (UnsupportedEncodingException e) {
-                                e.printStackTrace();
-                            }
-                            message  += "Xin chào,"   + personName;
-                            hasAqua = true;
-                        } else {
-                            stranger++;
-                        }
-                    } else {
-                        stranger++;
-                    }
-                }
-//                if (stranger > 0 && hasAqua) {
-//                    message += " và " + stranger + "người lạ";}
-                 if (stranger > 0 && !hasAqua) {
-                    message = "Cẩn thận có người phía trước";
-                }
-
-
-
-            }
-
-            showReply(message);
-            Toast.makeText(FaceTrackerActivity.this, message, Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -496,11 +381,38 @@ public final class FaceTrackerActivity extends ListeningActivity {
         mPreview.stop();
     }
 
+    boolean saveName = false;
+    boolean asking = false;
+
     @Override
     public void processVoiceCommands(String... voiceCommands) {
         Toast.makeText(context, voiceCommands[0], Toast.LENGTH_SHORT).show();
         if (voiceCommands[0].toLowerCase().contains("về")) {
             finish();
+        } if (voiceCommands[0].toLowerCase().contains("tôi có")) {
+            stopListening();
+            showReply("bạn muốn lưu lại tên gọi của người này là gì");
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    startListening();
+                    saveName = true;
+                    asking = true;
+                }
+            },5000);
+        } if (saveName && asking) {
+            stopListening();
+            showReply("bạn muốn lưu người này với tên là" + voiceCommands[0].toLowerCase());
+            startListening();
+            newPersonName = voiceCommands[0].toLowerCase();
+            asking = false;
+        } if (voiceCommands[0].toLowerCase().contains("tôi muốn") && saveName) {
+            stopListening();
+            new AddPersonTask(false,newPersonName).execute(mPersonGroupId);
+            startListening();
+        } if (voiceCommands[0].toLowerCase().contains("tôi không")) {
+            saveName = false;
         }
         restartListeningService();
     }
@@ -629,10 +541,11 @@ public final class FaceTrackerActivity extends ListeningActivity {
         @Override
         public void onNewItem(int faceId, Face item) {
             mFaceGraphic.setId(faceId);
+            final int id = faceId;
 
-            if (!FaceTrackerActivity.this.DETECT_RUNNING && FaceTrackerActivity.this.CURRENT_FACE_ID <= faceId) {
+            if (!TakePhotoActivity.this.DETECT_RUNNING && TakePhotoActivity.this.CURRENT_FACE_ID <= faceId) {
                 mCameraSource.takePicture(null, mCallBack);
-                FaceTrackerActivity.this.CURRENT_FACE_ID = faceId;
+                TakePhotoActivity.this.CURRENT_FACE_ID = id;
             }
         }
 
@@ -670,7 +583,159 @@ public final class FaceTrackerActivity extends ListeningActivity {
     }
 
 
+    String mPersonId = "";
+    boolean createPerson = false;
+
+    class AddPersonTask extends AsyncTask<String, String, String> {
+        // Indicate the next step is to add face in this person, or finish editing this person.
+        boolean mAddFace;
+        String personName;
+        AddPersonTask (boolean addFace, String personName) {
+            mAddFace = addFace;
+            try {
+                this.personName = URLEncoder.encode(personName,"UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            // Get an instance of face service client.
+            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
+            try{
+                publishProgress("Syncing with server to add person...");
+                Log.d("-----------------", "doInBackground: " + params[0] + personName);
+
+                // Start the request to creating person.
+                CreatePersonResult createPersonResult = faceServiceClient.createPerson(
+                        params[0],
+                        personName,
+                        getString(R.string.user_provided_description_data));
+
+                return createPersonResult.personId.toString();
+            } catch (Exception e) {
+                publishProgress(e.getMessage());
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+        }
+
+        @Override
+        protected void onProgressUpdate(String... progress) {
+
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mPersonId = result;
+            createPerson = true;
+            new TrainPersonGroupTask().execute(mPersonGroupId);
+
+        }
+    }
+
+    class AddFaceTask extends AsyncTask<Void, String, Boolean> {
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // Get an instance of face service client to detect faces in image.
+            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
+            try{
+                publishProgress("Adding face...");
+                UUID personId = UUID.fromString(mPersonId);
+
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                InputStream imageInputStream = new ByteArrayInputStream(stream.toByteArray());
+
+                // Start the request to add face.
+                AddPersistedFaceResult result = faceServiceClient.addPersonFace(
+                        mPersonGroupId,
+                        personId,
+                        imageInputStream,
+                        "User data",
+                        personNewFace.faceRectangle);
 
 
+                return true;
+            } catch (Exception e) {
+                publishProgress(e.getMessage());
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+        }
+
+        @Override
+        protected void onProgressUpdate(String... progress) {
+
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            new TrainPersonGroupTask().execute(mPersonGroupId);
+        }
+    }
+
+
+    class TrainPersonGroupTask extends AsyncTask<String, String, String> {
+
+        private static final String TAG = "PPA";
+
+        @Override
+        protected String doInBackground(String... params) {
+
+            // Get an instance of face service client.
+            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
+            try{
+                faceServiceClient.trainPersonGroup(params[0]);
+                return params[0];
+            } catch (Exception e) {
+                publishProgress(e.getMessage());
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+
+        }
+
+        @Override
+        protected void onProgressUpdate(String... progress) {
+            new TrainPersonGroupTask().execute(mPersonGroupId);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null && createPerson) {
+                new AddFaceTask().execute();
+                createPerson = false;
+            } else if (result == null) {
+                showReply("tạo người dữ liệu người mới thât bại");
+                createPerson = false;
+            } else if (result != null && !createPerson) {
+                showReply("tạo người dữ liệu người mới thành công");
+                mPreview.setVisibility(View.VISIBLE);
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        finish();
+                    }
+                },5000);
+
+            }
+
+
+        }
+    }
 
 }

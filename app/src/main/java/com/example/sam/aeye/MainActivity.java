@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import com.example.sam.aeye.facetracker.FaceTrackerActivity;
 import com.example.sam.aeye.persongroupmanagement.PersonGroupActivity;
+import com.example.sam.aeye.photo.TakePhotoActivity;
 import com.example.sam.aeye.utils.VoiceUtils;
 import com.example.sam.aeye.voice.ListeningActivity;
 import com.example.sam.aeye.voice.VoiceRecognitionListener;
@@ -37,9 +38,7 @@ public class MainActivity extends ListeningActivity{
     }
 
     public void startVoice(View view){
-        context = getApplicationContext(); // Needs to be set
-        VoiceRecognitionListener.getInstance().setListener(this); // Here we set the current listener
-        startListening(); // starts listening
+        startActivity(new Intent(this,TakePhotoActivity.class));
     }
 
 
@@ -53,10 +52,12 @@ public class MainActivity extends ListeningActivity{
         Toast.makeText(context, voiceCommands[0], Toast.LENGTH_SHORT).show();
         if (voiceCommands[0].contains("người")) {
             startActivity(new Intent(this, PersonGroupActivity.class));
-        }
-        if (voiceCommands[0].contains("nhận ")) {
+        } if (voiceCommands[0].contains("nhận ")) {
             startActivity(new Intent(this, FaceTrackerActivity.class));
+        } if (voiceCommands[0].contains("lưu lại")) {
+            startActivity(new Intent(this, TakePhotoActivity.class));
         }
+
         restartListeningService();
     }
 
@@ -66,6 +67,10 @@ public class MainActivity extends ListeningActivity{
 
     public void tracker(View view){
         startActivity(new Intent(this, FaceTrackerActivity.class));
+    }
+
+    public void save(View view) {
+        startActivity(new Intent(this, TakePhotoActivity.class));
     }
 
 }

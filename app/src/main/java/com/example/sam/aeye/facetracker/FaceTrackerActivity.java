@@ -26,6 +26,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -35,6 +39,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -56,7 +61,13 @@ import com.google.android.gms.vision.MultiProcessor;
 import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
+import com.google.gson.Gson;
+import com.microsoft.projectoxford.emotion.EmotionServiceClient;
+import com.microsoft.projectoxford.emotion.contract.FaceRectangle;
+import com.microsoft.projectoxford.emotion.contract.RecognizeResult;
+import com.microsoft.projectoxford.emotion.rest.EmotionServiceException;
 import com.microsoft.projectoxford.face.FaceServiceClient;
+import com.microsoft.projectoxford.face.FaceServiceRestClient;
 import com.microsoft.projectoxford.face.contract.IdentifyResult;
 import com.microsoft.projectoxford.face.contract.TrainingStatus;
 
@@ -264,6 +275,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
                 } else {
                     detecting= true;
 
+
                     // Called identify after detection.
                     if (detecting&& mPersonGroupId != null) {
                         // Start a background task to identify faces in the image.
@@ -274,7 +286,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
                             Log.d(TAG, "------------------------: " + face.faceId.toString());
                         }
 
-
+                        new doRequest(result);
                         new IdentificationTask(mPersonGroupId).execute(
                                 faceIds.toArray(new UUID[faceIds.size()]));
                         Log.d("-------", "identify: facezise" + faceIds.size());
@@ -399,6 +411,130 @@ public final class FaceTrackerActivity extends ListeningActivity {
 
     }
 
+    private List<RecognizeResult> processWithFaceRectangles(com.microsoft.projectoxford.face.contract.Face[] faces
+    ) throws EmotionServiceException, com.microsoft.projectoxford.face.rest.ClientException, IOException {
+        Log.d("emotion", "Do emotion detection with known face rectangles");
+        Gson gson = new Gson();
+
+        // Put the image into an input stream for detection.
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
+
+        long timeMark = System.currentTimeMillis();
+        Log.d("emotion", "Start face detection using Face API");
+        FaceRectangle[] faceRectangles = null;
+
+        Log.d("emotion", String.format("Face detection is done. Elapsed time: %d ms", (System.currentTimeMillis() - timeMark)));
+
+        if (faces != null) {
+            faceRectangles = new FaceRectangle[faces.length];
+
+            for (int i = 0; i < faceRectangles.length; i++) {
+                // Face API and Emotion API have different FaceRectangle definition. Do the conversion.
+                com.microsoft.projectoxford.face.contract.FaceRectangle rect = faces[i].faceRectangle;
+                faceRectangles[i] = new com.microsoft.projectoxford.emotion.contract.FaceRectangle(rect.left, rect.top, rect.width, rect.height);
+            }
+        }
+
+        List<RecognizeResult> result = null;
+        if (faceRectangles != null) {
+            inputStream.reset();
+
+            timeMark = System.currentTimeMillis();
+            Log.d("emotion", "Start emotion detection using Emotion API");
+            // -----------------------------------------------------------------------
+            // KEY SAMPLE CODE STARTS HERE
+            // -----------------------------------------------------------------------
+
+            EmotionServiceClient client = App.getClient();
+            result = client.recognizeImage(inputStream, faceRectangles);
+
+            String json = gson.toJson(result);
+            Log.d("result", json);
+            // -----------------------------------------------------------------------
+            // KEY SAMPLE CODE ENDS HERE
+            // -----------------------------------------------------------------------
+            Log.d("emotion", String.format("Emotion detection is done. Elapsed time: %d ms", (System.currentTimeMillis() - timeMark)));
+        }
+        return result;
+    }
+
+    private class doRequest extends AsyncTask<String, String, List<RecognizeResult>> {
+        // Store error message
+        private Exception e = null;
+        private boolean useFaceRectangles = false;
+        com.microsoft.projectoxford.face.contract.Face[] result;
+
+        public doRequest (com.microsoft.projectoxford.face.contract.Face[] result) {
+            this.useFaceRectangles = useFaceRectangles;
+            this.result = result;
+        }
+
+        @Override
+        protected List<RecognizeResult> doInBackground(String... args) {
+                try {
+                    return processWithFaceRectangles(result);
+                } catch (Exception e) {
+                    this.e = e;    // Store error
+                }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(List<RecognizeResult> result) {
+            super.onPostExecute(result);
+            // Display based on error existence
+
+            if (this.useFaceRectangles == false) {
+//                mEditText.append("\n\nRecognizing emotions with auto-detected face rectangles...\n");
+            } else {
+//                mEditText.append("\n\nRecognizing emotions with existing face rectangles from Face API...\n");
+            }
+            if (e != null) {
+//                mEditText.setText("Error: " + e.getMessage());
+                this.e = null;
+            } else {
+                if (result.size() == 0) {
+//                    mEditText.append("No emotion detected :(");
+                } else {
+                    Integer count = 0;
+                    // Covert bitmap to a mutable bitmap by copying it
+                    Bitmap bitmapCopy = mBitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    Canvas faceCanvas = new Canvas(bitmapCopy);
+                    faceCanvas.drawBitmap(mBitmap, 0, 0, null);
+                    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(5);
+                    paint.setColor(Color.RED);
+
+                    for (RecognizeResult r : result) {
+//                        mEditText.append(String.format("\nFace #%1$d \n", count));
+//                        mEditText.append(String.format("\t anger: %1$.5f\n", r.scores.anger));
+//                        mEditText.append(String.format("\t contempt: %1$.5f\n", r.scores.contempt));
+//                        mEditText.append(String.format("\t disgust: %1$.5f\n", r.scores.disgust));
+//                        mEditText.append(String.format("\t fear: %1$.5f\n", r.scores.fear));
+//                        mEditText.append(String.format("\t happiness: %1$.5f\n", r.scores.happiness));
+//                        mEditText.append(String.format("\t neutral: %1$.5f\n", r.scores.neutral));
+//                        mEditText.append(String.format("\t sadness: %1$.5f\n", r.scores.sadness));
+//                        mEditText.append(String.format("\t surprise: %1$.5f\n", r.scores.surprise));
+//                        mEditText.append(String.format("\t face rectangle: %d, %d, %d, %d", r.faceRectangle.left, r.faceRectangle.top, r.faceRectangle.width, r.faceRectangle.height));
+                        faceCanvas.drawRect(r.faceRectangle.left,
+                                r.faceRectangle.top,
+                                r.faceRectangle.left + r.faceRectangle.width,
+                                r.faceRectangle.top + r.faceRectangle.height,
+                                paint);
+                        count++;
+                    }
+//                    ImageView imageView = (ImageView) findViewById(R.id.selectedImage);
+//                    imageView.setImageDrawable(new BitmapDrawable(getResources(), mBitmap));
+                }
+//                mEditText.setSelection(0);
+            }
+
+//            mButtonSelectImage.setEnabled(true);
+        }
+    }
 
     private void setInfo(String info) {
         TextView textView = (TextView) findViewById(R.id.info);

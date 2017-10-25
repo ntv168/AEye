@@ -5,6 +5,8 @@ import android.content.Context;
 import android.util.Log;
 
 import com.example.sam.aeye.utils.VoiceUtils;
+import com.microsoft.projectoxford.emotion.EmotionServiceClient;
+import com.microsoft.projectoxford.emotion.EmotionServiceRestClient;
 import com.microsoft.projectoxford.face.FaceServiceClient;
 import com.microsoft.projectoxford.face.FaceServiceRestClient;
 
@@ -22,11 +24,22 @@ public class App extends Application {
 
     private static FaceServiceClient sFaceServiceClient;
 
+    private static EmotionServiceClient client;
+
+    public static EmotionServiceClient getClient() {
+        return client;
+    }
+
+    public void setClient(EmotionServiceClient client) {
+        this.client = client;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         context = getApplicationContext();
         sFaceServiceClient = new FaceServiceRestClient(getString(R.string.endpoint), getString(R.string.subscription_key));
+        client = new EmotionServiceRestClient(getString(R.string.subscription_key_emotion));
 
         context = this.getApplicationContext();
         VoiceUtils.initializeInstance(context);

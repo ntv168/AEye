@@ -9,6 +9,7 @@ import android.widget.Toast;
 import com.example.sam.aeye.facetracker.FaceTrackerActivity;
 import com.example.sam.aeye.persongroupmanagement.PersonGroupActivity;
 import com.example.sam.aeye.photo.TakePhotoActivity;
+import com.example.sam.aeye.streetmode.FaceTrackerStreetModeActivity;
 import com.example.sam.aeye.utils.VoiceUtils;
 import com.example.sam.aeye.voice.ListeningActivity;
 import com.example.sam.aeye.voice.VoiceRecognitionListener;
@@ -67,6 +68,10 @@ public class MainActivity extends ListeningActivity{
 
     public void tracker(View view){
         startActivity(new Intent(this, FaceTrackerActivity.class));
+    }
+
+    public void streetmode(View view) {
+        startActivity(new Intent(this, FaceTrackerStreetModeActivity.class));
     }
 
     public void save(View view) {

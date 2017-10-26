@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.sam.aeye.facetracker;
+package com.example.sam.aeye.streetmode;
 
 import android.Manifest;
 import android.app.Activity;
@@ -22,24 +22,17 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,7 +41,6 @@ import com.example.sam.aeye.R;
 import com.example.sam.aeye.camera.CameraConfig;
 import com.example.sam.aeye.camera.CameraSourcePreview;
 import com.example.sam.aeye.camera.GraphicOverlay;
-import com.example.sam.aeye.persongroupmanagement.PersonGroupActivity;
 import com.example.sam.aeye.utils.ImageHelper;
 import com.example.sam.aeye.utils.StorageHelper;
 import com.example.sam.aeye.utils.VoiceUtils;
@@ -61,13 +53,7 @@ import com.google.android.gms.vision.MultiProcessor;
 import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
-import com.google.gson.Gson;
-import com.microsoft.projectoxford.emotion.EmotionServiceClient;
-import com.microsoft.projectoxford.emotion.contract.FaceRectangle;
-import com.microsoft.projectoxford.emotion.contract.RecognizeResult;
-import com.microsoft.projectoxford.emotion.rest.EmotionServiceException;
 import com.microsoft.projectoxford.face.FaceServiceClient;
-import com.microsoft.projectoxford.face.FaceServiceRestClient;
 import com.microsoft.projectoxford.face.contract.IdentifyResult;
 import com.microsoft.projectoxford.face.contract.TrainingStatus;
 
@@ -88,7 +74,7 @@ import java.util.UUID;
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
  * overlay graphics to indicate the position, size, and ID of each face.
  */
-public final class FaceTrackerActivity extends ListeningActivity {
+public final class FaceTrackerStreetModeActivity extends ListeningActivity {
     private static final String TAG = "FaceTracker";
 
     private CameraSource mCameraSource = null;
@@ -101,7 +87,6 @@ public final class FaceTrackerActivity extends ListeningActivity {
     private static final int RC_HANDLE_GMS = 9001;
     // permission request codes need to be < 256
     private static final int RC_HANDLE_CAMERA_PERM = 2;
-    private static float happy = 0.2f;
 
     //==============================================================================================
     // Activity Methods
@@ -120,7 +105,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        setContentView(R.layout.activity_face_tracker);
+        setContentView(R.layout.activity_detect_street_mode);
 
         showReply("Sẵn sàng");
 
@@ -131,7 +116,6 @@ public final class FaceTrackerActivity extends ListeningActivity {
         }
 
 
-        mPersonGroupId = StorageHelper.getPersonGroupId("nguoinha", FaceTrackerActivity.this);
         detecting= false;
 
         progressDialog = new ProgressDialog(this);
@@ -149,266 +133,8 @@ public final class FaceTrackerActivity extends ListeningActivity {
             requestCameraPermission();
         }
 
-
-        mCallBack = new CameraSource.PictureCallback() {
-            @Override
-            public void onPictureTaken(byte[] data) {
-//                Toast.makeText(FaceTrackerStreetModeActivity.this, "take a picture", Toast.LENGTH_SHORT).show();
-
-                FaceTrackerActivity.this.DETECT_RUNNING = true;
-                showMessage("camera data length: "+ data.length);
-
-                //Rezise bitmap
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inPurgeable = true;
-
-                Bitmap tmp = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-                if(tmp.getHeight() > 300 && tmp.getWidth() > 300){
-                    tmp = Bitmap.createScaledBitmap(tmp, 300, 300, false);
-
-                }
-
-
-                //respone image base64
-                CameraConfig camera = CameraConfig.getInstance();
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
-                tmp.compress(Bitmap.CompressFormat.JPEG, 100, os);
-                camera.setFaceDetected(1);
-                camera.setFaceImage(os.toByteArray());
-
-                String root = Environment.getExternalStorageDirectory().toString();
-                File myDir = new File(root + "/saved_images");
-                myDir.mkdirs();
-                String nameFile = "testSelf.jpg";
-                File file = new File(myDir, nameFile);
-                if (file.exists ()) file.delete();
-                try {
-                    FileOutputStream out = new FileOutputStream(file);
-                    tmp.compress(Bitmap.CompressFormat.JPEG, 100, out);
-//
-                    out.close();
-                    showMessage("Saved picture......."+file.getCanonicalPath());
-                } catch (IOException e){
-                    Log.d("CAMERA file", e.getMessage());
-                }
-
-
-
-//                detecting = false;
-                // If image is selected successfully, set the image URI and bitmap.
-                Uri uri = Uri.fromFile(file);
-
-                mBitmap = ImageHelper.loadSizeLimitedBitmapFromUri(
-                        uri, getContentResolver());
-
-                detect(mBitmap);
-
-
-            }
-        };
-
     }
 
-
-
-    private void detect(Bitmap bitmap) {
-        // Put the image into an input stream for detection.
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
-
-
-        // Start a background task to detect faces in the image.
-        new DetectionTask().execute(inputStream);
-    }
-
-    private class DetectionTask extends AsyncTask<InputStream, String, com.microsoft.projectoxford.face.contract.Face[]> {
-        long startdetect = System.currentTimeMillis();
-        @Override
-        protected com.microsoft.projectoxford.face.contract.Face[] doInBackground(InputStream... params) {
-            // Get an instance of face service client to detect faces in image.
-            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
-
-            try{
-                publishProgress("Detecting...");
-
-                // Start detection.
-                return faceServiceClient.detect(
-                        params[0],  /* Input stream of image to detect */
-                        true,       /* Whether to return face ID */
-                        false,       /* Whether to return face landmarks */
-                        /* Which face attributes to analyze, currently we support:
-                           age,gender,headPose,smile,facialHair */
-                        null);
-            }  catch (Exception e) {
-                publishProgress(e.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            // Show the status of background detection task on screen.
-
-        }
-
-        @Override
-        protected void onPostExecute(com.microsoft.projectoxford.face.contract.Face[] result) {
-            progressDialog.dismiss();
-            long enddetect= System.currentTimeMillis();
-            Log.d("--------------", "time detect --------------- " + (enddetect - startdetect));
-
-            if (result != null) {
-                // Set the adapter of the ListView which contains the details of detectingfaces.
-                List<com.microsoft.projectoxford.face.contract.Face> faces = Arrays.asList(result);
-
-
-                if (result.length == 0) {
-                    detecting= false;
-                    setInfo("No faces detected!");
-                    FaceTrackerActivity.this.DETECT_RUNNING = false;
-                } else {
-                    detecting= true;
-
-
-                    // Called identify after detection.
-                    if (detecting&& mPersonGroupId != null) {
-                        // Start a background task to identify faces in the image.
-                        List<UUID> faceIds = new ArrayList<>();
-                        for (com.microsoft.projectoxford.face.contract.Face face:  faces) {
-                            faceIds.add(face.faceId);
-
-                            Log.d(TAG, "------------------------: " + face.faceId.toString());
-                        }
-                        new IdentificationTask(mPersonGroupId).execute(
-                                faceIds.toArray(new UUID[faceIds.size()]));
-                        Log.d("-------", "identify: facezise" + faceIds.size());
-                        FaceTrackerActivity.this.DETECT_RUNNING = false;
-                    } else {
-                        // Not detectingor person group exists.
-                        FaceTrackerActivity.this.DETECT_RUNNING = false;
-                        setInfo("Please select an image and create a person group first.");
-                    }
-                }
-            } else {
-                detecting= false;
-                ;
-            }
-
-        }
-
-    }
-
-    private class IdentificationTask extends AsyncTask<UUID, String, IdentifyResult[]> {
-        String mPersonGroupId;
-        long startidentify = System.currentTimeMillis();
-        IdentificationTask(String personGroupId) {
-            this.mPersonGroupId = personGroupId;
-            Log.d("--------", "IdentificationTask: " + personGroupId);
-        }
-
-        @Override
-        protected IdentifyResult[] doInBackground(UUID... params) {
-            String logString = "Request: Identifying faces ";
-            for (UUID faceId: params) {
-                logString += faceId.toString() + ", ";
-            }
-            logString += " in group " + mPersonGroupId;
-            Log.d("--------", "IdentificationTask: " + mPersonGroupId);
-            // Get an instance of face service client to detect faces in image.
-            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
-            try{
-                publishProgress("Getting person group status...");
-
-                TrainingStatus trainingStatus = faceServiceClient.getPersonGroupTrainingStatus(
-                        this.mPersonGroupId);     /* personGroupId */
-
-                Log.d("--------", "trainingStatus: " + trainingStatus);
-
-                if (trainingStatus.status != TrainingStatus.Status.Succeeded) {
-                    publishProgress("Person group training status is " + trainingStatus.status);
-                    return null;
-                }
-
-                publishProgress("Identifying...");
-
-                // Start identification.
-                return faceServiceClient.identity(
-                        this.mPersonGroupId,   /* personGroupId */
-                        params,                  /* faceIds */
-                        1);  /* maxNumOfCandidatesReturned */
-            }  catch (Exception e) {
-
-                publishProgress(e.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPreExecute() {
-//
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            // Show the status of background detection task on screen.a
-
-        }
-
-        @Override
-        protected void onPostExecute(IdentifyResult[] result) {
-            long endidentify= System.currentTimeMillis();
-            Log.d("----------------", "time identity: ------------- " + (endidentify - startidentify));
-            String message = "";
-            // Show the result on screen when detection is done.
-            // Set the information about the detection result.
-            if (result != null) {
-                Toast.makeText(FaceTrackerActivity.this, ""+ (endidentify - startidentify), Toast.LENGTH_LONG).show();
-
-                Boolean hasAqua = false;
-                int stranger = 0;
-
-                for (IdentifyResult identifyResult: result) {
-                    if (identifyResult.candidates.size() > 0) {
-                        if (identifyResult.candidates.get(0).confidence > 0.65) {
-                            String personId = identifyResult.candidates.get(0).personId.toString();
-                            String personName = StorageHelper.getPersonName(
-                                    personId, mPersonGroupId, FaceTrackerActivity.this);
-                            try {
-                                personName = URLDecoder.decode(personName,"UTF-8");
-                            } catch (UnsupportedEncodingException e) {
-                                e.printStackTrace();
-                            }
-                            message  += "Xin chào,"   + personName;
-                            hasAqua = true;
-                        } else {
-                            stranger++;
-                        }
-                    } else {
-                        stranger++;
-                    }
-                }
-//                if (stranger > 0 && hasAqua) {
-//                    message += " và " + stranger + "người lạ";}
-                 if (stranger > 0 && !hasAqua) {
-                    message = "Cẩn thận có người phía trước";
-                }
-
-
-
-            }
-
-            showReply(message);
-            Toast.makeText(FaceTrackerActivity.this, message, Toast.LENGTH_SHORT).show();
-        }
-
-    }
 
 
     private void setInfo(String info) {
@@ -485,7 +211,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
         mCameraSource = new CameraSource.Builder(context, detector)
                 .setRequestedPreviewSize(640, 480)
                 .setFacing(CameraSource.CAMERA_FACING_BACK)
-                .setRequestedFps(30.0f)
+                .setRequestedFps(60.0f)
                 .build();
     }
 
@@ -640,12 +366,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
         @Override
         public void onNewItem(int faceId, Face item) {
             mFaceGraphic.setId(faceId);
-
-            if (!FaceTrackerActivity.this.DETECT_RUNNING && FaceTrackerActivity.this.CURRENT_FACE_ID <= faceId) {
-                mCameraSource.takePicture(null, mCallBack);
-                FaceTrackerActivity.this.CURRENT_FACE_ID = faceId;
-
-            }
+            showReply("Cẩn thận có người phía trước");
         }
 
         /**

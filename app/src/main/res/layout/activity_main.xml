@@ -60,6 +60,15 @@
             android:onClick="stopVoice"
             android:padding="10dp"
             android:text="dừng lắng nghe" />
+
+        <Button
+            style="@style/ButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:onClick="streetmode"
+            android:padding="10dp"
+            android:text="chế độ đi đường" />
     </LinearLayout>
 
 </LinearLayout>

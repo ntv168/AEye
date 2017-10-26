@@ -32,6 +32,7 @@
         <activity android:name=".persongroupmanagement.AddFaceToPersonActivity"/>
         <activity android:name=".facetracker.FaceTrackerActivity"/>
         <activity android:name=".photo.TakePhotoActivity"/>
+        <activity android:name=".streetmode.FaceTrackerStreetModeActivity"/>
     </application>
 
 </manifest>

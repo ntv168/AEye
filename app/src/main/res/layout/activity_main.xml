@@ -69,6 +69,12 @@
             android:onClick="streetmode"
             android:padding="10dp"
             android:text="chế độ đi đường" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ver.10282017" />
     </LinearLayout>
 
 </LinearLayout>

@@ -57,6 +57,8 @@ public class MainActivity extends ListeningActivity{
             startActivity(new Intent(this, FaceTrackerActivity.class));
         } if (voiceCommands[0].contains("lưu lại")) {
             startActivity(new Intent(this, TakePhotoActivity.class));
+        } if (voiceCommands[0].contains("đường") && voiceCommands[0].contains("đi")) {
+            startActivity(new Intent(this, FaceTrackerStreetModeActivity.class));
         }
 
         restartListeningService();

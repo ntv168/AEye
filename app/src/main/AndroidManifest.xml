@@ -30,9 +30,15 @@
             android:parentActivityName=".persongroupmanagement.PersonGroupActivity"/>
 
         <activity android:name=".persongroupmanagement.AddFaceToPersonActivity"/>
-        <activity android:name=".facetracker.FaceTrackerActivity"/>
-        <activity android:name=".photo.TakePhotoActivity"/>
-        <activity android:name=".streetmode.FaceTrackerStreetModeActivity"/>
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".facetracker.FaceTrackerActivity"/>
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".photo.TakePhotoActivity"/>
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".streetmode.FaceTrackerStreetModeActivity"/>
     </application>
 
 </manifest>

@@ -223,6 +223,8 @@ public final class FaceTrackerActivity extends ListeningActivity {
         new DetectionTask().execute(inputStream);
     }
 
+    com.microsoft.projectoxford.face.contract.Face emotionFace = null;
+
     private class DetectionTask extends AsyncTask<InputStream, String, com.microsoft.projectoxford.face.contract.Face[]> {
         long startdetect = System.currentTimeMillis();
         @Override
@@ -240,7 +242,21 @@ public final class FaceTrackerActivity extends ListeningActivity {
                         false,       /* Whether to return face landmarks */
                         /* Which face attributes to analyze, currently we support:
                            age,gender,headPose,smile,facialHair */
-                        null);
+                        new FaceServiceClient.FaceAttributeType[] {
+                                FaceServiceClient.FaceAttributeType.Age,
+                                FaceServiceClient.FaceAttributeType.Gender,
+                                FaceServiceClient.FaceAttributeType.Smile,
+                                FaceServiceClient.FaceAttributeType.Glasses,
+                                FaceServiceClient.FaceAttributeType.FacialHair,
+                                FaceServiceClient.FaceAttributeType.Emotion,
+                                FaceServiceClient.FaceAttributeType.HeadPose,
+                                FaceServiceClient.FaceAttributeType.Accessories,
+                                FaceServiceClient.FaceAttributeType.Blur,
+                                FaceServiceClient.FaceAttributeType.Exposure,
+                                FaceServiceClient.FaceAttributeType.Hair,
+                                FaceServiceClient.FaceAttributeType.Makeup,
+                                FaceServiceClient.FaceAttributeType.Noise,
+                                FaceServiceClient.FaceAttributeType.Occlusion});
             }  catch (Exception e) {
                 publishProgress(e.getMessage());
                 return null;
@@ -265,9 +281,17 @@ public final class FaceTrackerActivity extends ListeningActivity {
             Log.d("--------------", "time detect --------------- " + (enddetect - startdetect));
 
             if (result != null) {
+                if (  result.length == 1) {
+                    emotionFace = result[0];
+                } else {
+                    emotionFace = null;
+                }
+            }
+
+
+            if (result != null) {
                 // Set the adapter of the ListView which contains the details of detectingfaces.
                 List<com.microsoft.projectoxford.face.contract.Face> faces = Arrays.asList(result);
-
 
                 if (result.length == 0) {
                     detecting= false;
@@ -397,10 +421,8 @@ public final class FaceTrackerActivity extends ListeningActivity {
 //                if (stranger > 0 && hasAqua) {
 //                    message += " và " + stranger + "người lạ";}
                  if (stranger > 0 && !hasAqua) {
-                    message = "Cẩn thận có người phía trước";
+                    message = "nhận diện hoàn tất";
                 }
-
-
 
             }
 
@@ -512,6 +534,28 @@ public final class FaceTrackerActivity extends ListeningActivity {
         Toast.makeText(context, voiceCommands[0], Toast.LENGTH_SHORT).show();
         if (voiceCommands[0].toLowerCase().contains("về")) {
             finish();
+        }
+        if (voiceCommands[0].toLowerCase().contains("cảm")) {
+            if (emotionFace == null) {
+                showReply("có quá nhiều khuôn mặt để nhận diện, xin vui lòng thử lại");
+            } else {
+                if (emotionFace.faceAttributes.smile > 0.55) {
+                    showReply("người này có vẻ đang vui");
+                } else if (emotionFace.faceAttributes.smile < 0.35) {
+                    showReply("người này có vẻ buồn");
+                } else {
+                    showReply("người này có vẻ mặt bình thường");
+                }
+            }
+
+        }
+        if (voiceCommands[0].toLowerCase().contains("bao nhiêu")) {
+            if (emotionFace == null) {
+                showReply("không xác định được, xin vui lòng thử lại");
+            } else {
+                showReply("người này khoảng " + emotionFace.faceAttributes.age + " tuổi");
+            }
+
         }
         restartListeningService();
     }

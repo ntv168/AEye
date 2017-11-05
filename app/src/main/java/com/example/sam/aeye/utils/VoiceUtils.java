@@ -3,6 +3,10 @@ package com.example.sam.aeye.utils;
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.widget.Toast;
+
+import com.example.sam.aeye.AppSingleton;
+import com.example.sam.aeye.moneydetect.FaceTrackerActivity;
 
 import java.util.Locale;
 
@@ -14,6 +18,7 @@ public class VoiceUtils {
     private static VoiceUtils singleton;
     private String content;
     private TextToSpeech tts;
+
     public static synchronized void initializeInstance(final Context context) {
         if (singleton == null) {
             singleton = new VoiceUtils();
@@ -39,8 +44,9 @@ public class VoiceUtils {
 
     private VoiceUtils() {
     }
-    public static  void speak(String sentence){
+    public static void speak(String sentence){
          singleton.tts.speak(sentence, TextToSpeech.QUEUE_FLUSH, null);
+
     }
     public String getContent() {
         return content;
@@ -61,5 +67,12 @@ public class VoiceUtils {
         public void onFinish();
         public void onInitFinish();
 
+    }
+
+    public Boolean showToast(){
+        if (!getContent().equals("")) {
+            return true;
+        }
+        return false;
     }
 }

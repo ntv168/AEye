@@ -39,6 +39,9 @@
         <activity
             android:screenOrientation="portrait"
             android:name=".streetmode.FaceTrackerStreetModeActivity"/>
+        <activity android:name=".moneydetect.FaceTrackerActivity"/>
+
+
     </application>
 
 </manifest>

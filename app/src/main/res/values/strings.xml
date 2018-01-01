@@ -114,4 +114,7 @@
     <string name="permission_camera_rationale">Yêu cầu kết nối với camera</string>
     <string name="no_camera_permission">Ứng dụng dừng đã dừng vì không được cấp quyền camera.</string>
     <string name="low_storage_error">nhận diện người không thể thực hiện được vì bộ nhớ máy sắp hết</string>
+
+    <!--Clarifai-->
+    <string name="clarifai_api_key">d19ec84468b1417f886b11ff1b1e539b</string>
 </resources>

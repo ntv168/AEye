@@ -24,7 +24,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".persongroupmanagement.SelectImageActivity"/>
+        <activity android:name=".utils.SelectImageActivity"/>
         <activity android:name=".persongroupmanagement.PersonGroupActivity"
             android:parentActivityName=".MainActivity">
         </activity>

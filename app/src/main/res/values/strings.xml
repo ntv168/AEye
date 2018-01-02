@@ -117,4 +117,6 @@
 
     <!--Clarifai-->
     <string name="clarifai_api_key">d19ec84468b1417f886b11ff1b1e539b</string>
+    <string name="error_while_contacting_api">Error while contacting Clarifai API</string>
+    <string name="no_results_from_api">API did not return any results</string>
 </resources>

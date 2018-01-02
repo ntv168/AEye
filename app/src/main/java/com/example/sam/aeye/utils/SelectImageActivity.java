@@ -30,7 +30,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-package com.example.sam.aeye.persongroupmanagement;
+package com.example.sam.aeye.utils;
 
 import android.content.Intent;
 import android.net.Uri;

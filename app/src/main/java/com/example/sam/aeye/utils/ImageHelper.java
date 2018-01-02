@@ -33,6 +33,8 @@
 package com.example.sam.aeye.utils;
 
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -48,6 +50,8 @@ import android.provider.MediaStore;
 import com.microsoft.projectoxford.face.contract.Face;
 import com.microsoft.projectoxford.face.contract.FaceRectangle;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -319,5 +323,29 @@ public class ImageHelper {
         result.width = (int)sideLength;
         result.height = (int)sideLength;
         return result;
+    }
+
+    public static byte[] retrieveSelectedImage(Context context, Intent data) {
+        InputStream inStream = null;
+        Bitmap bitmap = null;
+        try {
+            inStream = context.getContentResolver().openInputStream(data.getData());
+            bitmap = BitmapFactory.decodeStream(inStream);
+            final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+            return outStream.toByteArray();
+        } catch (FileNotFoundException e) {
+            return null;
+        } finally {
+            if (inStream != null) {
+                try {
+                    inStream.close();
+                } catch (IOException ignored) {
+                }
+            }
+            if (bitmap != null) {
+                bitmap.recycle();
+            }
+        }
     }
 }

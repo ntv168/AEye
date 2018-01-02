@@ -39,7 +39,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -59,6 +58,7 @@ import android.widget.TextView;
 
 import com.example.sam.aeye.App;
 import com.example.sam.aeye.R;
+import com.example.sam.aeye.utils.SelectImageActivity;
 import com.example.sam.aeye.utils.StorageHelper;
 import com.example.sam.aeye.utils.VoiceUtils;
 import com.example.sam.aeye.voice.ListeningActivity;

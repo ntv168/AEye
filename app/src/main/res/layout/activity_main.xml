@@ -48,9 +48,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:onClick="star0tVoice"
+            android:onClick="uploadDrive"
             android:padding="10dp"
-            android:text="Bắt đầu lắng nghe" />
+            android:text="Tải ảnh lên drive" />
 
         <Button
             style="@style/ButtonStyle"

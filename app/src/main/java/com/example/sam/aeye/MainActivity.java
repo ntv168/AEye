@@ -1,15 +1,21 @@
 package com.example.sam.aeye;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -20,7 +26,6 @@ import android.widget.Toast;
 
 import com.example.sam.aeye.facetracker.FaceTrackerActivity;
 import com.example.sam.aeye.http.WebServer;
-import com.example.sam.aeye.persongroupmanagement.AddFaceToPersonActivity;
 import com.example.sam.aeye.persongroupmanagement.PersonGroupActivity;
 import com.example.sam.aeye.photo.TakePhotoActivity;
 import com.example.sam.aeye.streetmode.FaceTrackerStreetModeActivity;
@@ -29,6 +34,13 @@ import com.example.sam.aeye.utils.SelectImageActivity;
 import com.example.sam.aeye.utils.VoiceUtils;
 import com.example.sam.aeye.voice.ListeningActivity;
 import com.example.sam.aeye.voice.VoiceRecognitionListener;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.drive.CreateFileActivityOptions;
+import com.google.android.gms.drive.Drive;
+import com.google.android.gms.drive.DriveClient;
+import com.google.android.gms.drive.DriveResourceClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +48,14 @@ import java.util.List;
 import clarifai2.api.ClarifaiResponse;
 import clarifai2.dto.input.ClarifaiImage;
 import clarifai2.dto.input.ClarifaiInput;
-import clarifai2.dto.model.ConceptModel;
 import clarifai2.dto.model.output.ClarifaiOutput;
 import clarifai2.dto.prediction.Concept;
 
 public class MainActivity extends ListeningActivity {
+
+    private static final String TAG = "drive-quickstart";
+    private static final int REQUEST_CODE_SIGN_IN = 3;
+
 
     private static final int REQUEST_SELECT_IMAGE = 0;
     private static final float LOCATION_REFRESH_DISTANCE = 0;
@@ -165,8 +180,8 @@ public class MainActivity extends ListeningActivity {
     }
 
 
-    public void startVoice(View view){
-        startActivity(new Intent(this,TakePhotoActivity.class));
+    public void uploadDrive(View view){
+        startActivity(new Intent(this, com.example.sam.aeye.drive.TakePhotoActivity.class));
     }
 
     public void checkMoney(View view){
@@ -214,8 +229,6 @@ public class MainActivity extends ListeningActivity {
     public void save(View view) {
         startActivity(new Intent(this, TakePhotoActivity.class));
     }
-
-
 
 
 }

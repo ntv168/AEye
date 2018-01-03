@@ -58,9 +58,6 @@ public class MainActivity extends ListeningActivity {
 
 
     private static final int REQUEST_SELECT_IMAGE = 0;
-    private static final float LOCATION_REFRESH_DISTANCE = 0;
-    private static final long LOCATION_REFRESH_TIME = 0;
-    private static Location mLocation;
     private List<ClarifaiOutput<Concept>> predictionResults = new ArrayList<>();
     private ProgressDialog progressDialog;
 
@@ -69,8 +66,7 @@ public class MainActivity extends ListeningActivity {
     }
 
     private WebServer mWebServer;
-    // Declaring a Location Manager
-    protected LocationManager mLocationManager;
+
 
     @Override
     protected void onResume() {
@@ -81,29 +77,6 @@ public class MainActivity extends ListeningActivity {
         VoiceRecognitionListener.getInstance().setListener(this); // Here we set the current listener
         startListening(); // starts listening
     }
-
-
-    private final LocationListener mLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(final Location location) {
-            mLocation = location;
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -145,6 +118,13 @@ public class MainActivity extends ListeningActivity {
                     return;
                 }
 
+                String mess = "";
+
+                for (int i = 0; i < predictions.get(0).data().size(); i++) {
+                    mess += predictions.get(0).data().get(i).name() + ": "
+                            + predictions.get(0).data().get(i).value() + " -- ";
+                }
+                Toast.makeText(context, mess, Toast.LENGTH_LONG).show();
                 showReply(predictions.get(0).data().get(0).name());
             }
         }.execute();
@@ -157,25 +137,6 @@ public class MainActivity extends ListeningActivity {
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Đang xử lí...");
-        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
-                LOCATION_REFRESH_DISTANCE, mLocationListener);
-
 
     }
 
@@ -186,8 +147,8 @@ public class MainActivity extends ListeningActivity {
 
     public void checkMoney(View view){
 
-        Intent intent = new Intent(this, SelectImageActivity.class);
-        startActivityForResult(intent, REQUEST_SELECT_IMAGE);
+        Intent intent = new Intent(this, com.example.sam.aeye.moneydetect.FaceTrackerActivity.class);
+        startActivity(intent);
     }
 
     @Override
@@ -202,13 +163,11 @@ public class MainActivity extends ListeningActivity {
         } if (voiceCommands[0].contains("đường") && voiceCommands[0].contains("đi")) {
             startActivity(new Intent(this, FaceTrackerStreetModeActivity.class));
         } if (voiceCommands[0].contains("kiểm tra")) {
-            final int port = 9090;
-            mWebServer = new WebServer(port,MainActivity.this);
-
-            startActivity(new Intent(this, com.example.sam.aeye.moneydetect.FaceTrackerActivity.class));
-
-            (new Thread(mWebServer)).start();
-            Toast.makeText(this, "Server Start", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(this, com.example.sam.aeye.moneydetect.FaceTrackerActivity.class);
+            startActivity(intent);
+        } if (voiceCommands[0].contains("tải")) {
+            Intent intent = new Intent(this, com.example.sam.aeye.drive.TakePhotoActivity.class);
+            startActivity(intent);
         }
 
         restartListeningService();

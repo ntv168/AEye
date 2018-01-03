@@ -72,6 +72,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import clarifai2.api.ClarifaiResponse;
+import clarifai2.dto.input.ClarifaiImage;
+import clarifai2.dto.input.ClarifaiInput;
+import clarifai2.dto.model.output.ClarifaiOutput;
+import clarifai2.dto.prediction.Concept;
+
 /**
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
  * overlay graphics to indicate the position, size, and ID of each face.
@@ -151,12 +157,7 @@ public final class FaceTrackerActivity extends ListeningActivity {
                 options.inPurgeable = true;
 
                 Bitmap tmp = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-                if(tmp.getHeight() > 300 && tmp.getWidth() > 300){
-                    tmp = Bitmap.createScaledBitmap(tmp, 300, 300, false);
-
-                }
-
+                ByteArrayOutputStream bitmapStream = new ByteArrayOutputStream();
 
                 //respone image base64
                 CameraConfig camera = CameraConfig.getInstance();
@@ -190,7 +191,9 @@ public final class FaceTrackerActivity extends ListeningActivity {
                 mBitmap = ImageHelper.loadSizeLimitedBitmapFromUri(
                         uri, getContentResolver());
 
-                detect(mBitmap);
+                mBitmap.compress(Bitmap.CompressFormat.PNG, 100, bitmapStream);
+
+                onImagePicked(bitmapStream.toByteArray());
 
 
             }
@@ -198,226 +201,32 @@ public final class FaceTrackerActivity extends ListeningActivity {
 
     }
 
+    private void onImagePicked(final byte[] imageBytes) {
 
+        new AsyncTask<Void, Void, ClarifaiResponse<List<ClarifaiOutput<Concept>>>>() {
+            @Override protected ClarifaiResponse<List<ClarifaiOutput<Concept>>> doInBackground(Void... params) {
+                // The default Clarifai model that identifies concepts in images
+                // Use this model to predict, with the image that the user just selected as the input
+                return App.getClarifaiClient().getModelByID("VND").executeSync().get().asConceptModel().predict()
+                        .withInputs(ClarifaiInput.forImage(ClarifaiImage.of(imageBytes)))
+                        .executeSync();
 
-    private void detect(Bitmap bitmap) {
-        // Put the image into an input stream for detection.
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
-
-
-        // Start a background task to detect faces in the image.
-        new DetectionTask().execute(inputStream);
-    }
-
-    com.microsoft.projectoxford.face.contract.Face emotionFace = null;
-
-    private class DetectionTask extends AsyncTask<InputStream, String, com.microsoft.projectoxford.face.contract.Face[]> {
-        long startdetect = System.currentTimeMillis();
-        @Override
-        protected com.microsoft.projectoxford.face.contract.Face[] doInBackground(InputStream... params) {
-            // Get an instance of face service client to detect faces in image.
-            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
-
-            try{
-                publishProgress("Detecting...");
-
-                // Start detection.
-                return faceServiceClient.detect(
-                        params[0],  /* Input stream of image to detect */
-                        true,       /* Whether to return face ID */
-                        false,       /* Whether to return face landmarks */
-                        /* Which face attributes to analyze, currently we support:
-                           age,gender,headPose,smile,facialHair */
-                        new FaceServiceClient.FaceAttributeType[] {
-                                FaceServiceClient.FaceAttributeType.Age,
-                                FaceServiceClient.FaceAttributeType.Gender,
-                                FaceServiceClient.FaceAttributeType.Smile,
-                                FaceServiceClient.FaceAttributeType.Glasses,
-                                FaceServiceClient.FaceAttributeType.FacialHair,
-                                FaceServiceClient.FaceAttributeType.Emotion,
-                                FaceServiceClient.FaceAttributeType.HeadPose,
-                                FaceServiceClient.FaceAttributeType.Accessories,
-                                FaceServiceClient.FaceAttributeType.Blur,
-                                FaceServiceClient.FaceAttributeType.Exposure,
-                                FaceServiceClient.FaceAttributeType.Hair,
-                                FaceServiceClient.FaceAttributeType.Makeup,
-                                FaceServiceClient.FaceAttributeType.Noise,
-                                FaceServiceClient.FaceAttributeType.Occlusion});
-            }  catch (Exception e) {
-                publishProgress(e.getMessage());
-                return null;
             }
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            // Show the status of background detection task on screen.
-
-        }
-
-        @Override
-        protected void onPostExecute(com.microsoft.projectoxford.face.contract.Face[] result) {
-            progressDialog.dismiss();
-            long enddetect= System.currentTimeMillis();
-            Log.d("--------------", "time detect --------------- " + (enddetect - startdetect));
-
-            if (result != null) {
-                if (  result.length == 1) {
-                    emotionFace = result[0];
-                } else {
-                    emotionFace = null;
+            @Override protected void onPostExecute(ClarifaiResponse<List<ClarifaiOutput<Concept>>> response) {
+                progressDialog.dismiss();
+                if (!response.isSuccessful()) {
+                    Toast.makeText(context, R.string.error_while_contacting_api, Toast.LENGTH_SHORT).show();
+                    return;
                 }
-            }
-
-
-            if (result != null) {
-                // Set the adapter of the ListView which contains the details of detectingfaces.
-                List<com.microsoft.projectoxford.face.contract.Face> faces = Arrays.asList(result);
-
-                if (result.length == 0) {
-                    detecting= false;
-                    setInfo("No faces detected!");
-                    FaceTrackerActivity.this.DETECT_RUNNING = false;
-                } else {
-                    detecting= true;
-
-
-                    // Called identify after detection.
-                    if (detecting&& mPersonGroupId != null) {
-                        // Start a background task to identify faces in the image.
-                        List<UUID> faceIds = new ArrayList<>();
-                        for (com.microsoft.projectoxford.face.contract.Face face:  faces) {
-                            faceIds.add(face.faceId);
-
-                            Log.d(TAG, "------------------------: " + face.faceId.toString());
-                        }
-                        new IdentificationTask(mPersonGroupId).execute(
-                                faceIds.toArray(new UUID[faceIds.size()]));
-                        Log.d("-------", "identify: facezise" + faceIds.size());
-                        FaceTrackerActivity.this.DETECT_RUNNING = false;
-                    } else {
-                        // Not detectingor person group exists.
-                        FaceTrackerActivity.this.DETECT_RUNNING = false;
-                        setInfo("Please select an image and create a person group first.");
-                    }
-                }
-            } else {
-                detecting= false;
-                ;
-            }
-
-        }
-
-    }
-
-    private class IdentificationTask extends AsyncTask<UUID, String, IdentifyResult[]> {
-        String mPersonGroupId;
-        long startidentify = System.currentTimeMillis();
-        IdentificationTask(String personGroupId) {
-            this.mPersonGroupId = personGroupId;
-            Log.d("--------", "IdentificationTask: " + personGroupId);
-        }
-
-        @Override
-        protected IdentifyResult[] doInBackground(UUID... params) {
-            String logString = "Request: Identifying faces ";
-            for (UUID faceId: params) {
-                logString += faceId.toString() + ", ";
-            }
-            logString += " in group " + mPersonGroupId;
-            Log.d("--------", "IdentificationTask: " + mPersonGroupId);
-            // Get an instance of face service client to detect faces in image.
-            FaceServiceClient faceServiceClient = App.getFaceServiceClient();
-            try{
-                publishProgress("Getting person group status...");
-
-                TrainingStatus trainingStatus = faceServiceClient.getPersonGroupTrainingStatus(
-                        this.mPersonGroupId);     /* personGroupId */
-
-                Log.d("--------", "trainingStatus: " + trainingStatus);
-
-                if (trainingStatus.status != TrainingStatus.Status.Succeeded) {
-                    publishProgress("Person group training status is " + trainingStatus.status);
-                    return null;
+                final List<ClarifaiOutput<Concept>> predictions = response.get();
+                if (predictions.isEmpty()) {
+                    Toast.makeText(context, R.string.no_results_from_api, Toast.LENGTH_SHORT).show();
+                    return;
                 }
 
-                publishProgress("Identifying...");
-
-                // Start identification.
-                return faceServiceClient.identity(
-                        this.mPersonGroupId,   /* personGroupId */
-                        params,                  /* faceIds */
-                        1);  /* maxNumOfCandidatesReturned */
-            }  catch (Exception e) {
-
-                publishProgress(e.getMessage());
-                return null;
+                showReply(predictions.get(0).data().get(0).name());
             }
-        }
-
-        @Override
-        protected void onPreExecute() {
-//
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            // Show the status of background detection task on screen.a
-
-        }
-
-        @Override
-        protected void onPostExecute(IdentifyResult[] result) {
-            long endidentify= System.currentTimeMillis();
-            Log.d("----------------", "time identity: ------------- " + (endidentify - startidentify));
-            String message = "";
-            // Show the result on screen when detection is done.
-            // Set the information about the detection result.
-            if (result != null) {
-                Toast.makeText(FaceTrackerActivity.this, ""+ (endidentify - startidentify), Toast.LENGTH_LONG).show();
-
-                Boolean hasAqua = false;
-                int stranger = 0;
-
-                for (IdentifyResult identifyResult: result) {
-                    if (identifyResult.candidates.size() > 0) {
-                        if (identifyResult.candidates.get(0).confidence > 0.65) {
-                            String personId = identifyResult.candidates.get(0).personId.toString();
-                            String personName = StorageHelper.getPersonName(
-                                    personId, mPersonGroupId, FaceTrackerActivity.this);
-                            try {
-                                personName = URLDecoder.decode(personName,"UTF-8");
-                            } catch (UnsupportedEncodingException e) {
-                                e.printStackTrace();
-                            }
-                            message  += "Xin chào,"   + personName;
-                            hasAqua = true;
-                        } else {
-                            stranger++;
-                        }
-                    } else {
-                        stranger++;
-                    }
-                }
-//                if (stranger > 0 && hasAqua) {
-//                    message += " và " + stranger + "người lạ";}
-                 if (stranger > 0 && !hasAqua) {
-                    message = "nhận diện hoàn tất";
-                }
-
-            }
-
-            showReply(message);
-            Toast.makeText(FaceTrackerActivity.this, message, Toast.LENGTH_SHORT).show();
-        }
-
+        }.execute();
     }
 
 
@@ -525,28 +334,8 @@ public final class FaceTrackerActivity extends ListeningActivity {
         }
         if (voiceCommands[0].toLowerCase().contains("về")) {
             finish();
-        }
-        if (voiceCommands[0].toLowerCase().contains("cảm")) {
-            if (emotionFace == null) {
-                showReply("có quá nhiều khuôn mặt để nhận diện, xin vui lòng thử lại");
-            } else {
-                if (emotionFace.faceAttributes.smile > 0.55) {
-                    showReply("người này có vẻ đang vui");
-                } else if (emotionFace.faceAttributes.smile < 0.35) {
-                    showReply("người này có vẻ buồn");
-                } else {
-                    showReply("người này có vẻ mặt bình thường");
-                }
-            }
-
-        }
-        if (voiceCommands[0].toLowerCase().contains("bao nhiêu")) {
-            if (emotionFace == null) {
-                showReply("không xác định được, xin vui lòng thử lại");
-            } else {
-                showReply("người này khoảng " + emotionFace.faceAttributes.age + " tuổi");
-            }
-
+        } if (voiceCommands[0].toLowerCase().contains("tra")) {
+            mCameraSource.takePicture(null, mCallBack);
         }
         restartListeningService();
     }

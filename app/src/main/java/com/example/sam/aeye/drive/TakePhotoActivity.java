@@ -27,6 +27,9 @@ import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -74,31 +77,23 @@ import com.google.android.gms.vision.MultiProcessor;
 import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
-import com.microsoft.projectoxford.face.FaceServiceClient;
-import com.microsoft.projectoxford.face.contract.AddPersistedFaceResult;
-import com.microsoft.projectoxford.face.contract.CreatePersonResult;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
 /**
  * Activity for the face tracker app.  This app detects faces with the rear facing camera, and draws
  * overlay graphics to indicate the position, size, and ID of each face.
  */
 public final class TakePhotoActivity extends ListeningActivity {
     private static final String TAG = "FaceTracker";
+    private static final float LOCATION_REFRESH_DISTANCE = 0;
+    private static final long LOCATION_REFRESH_TIME = 0;
+    private static Location mLocation;
+    // Declaring a Location Manager
+    protected LocationManager mLocationManager;
 
     private CameraSource mCameraSource = null;
 
@@ -129,7 +124,6 @@ public final class TakePhotoActivity extends ListeningActivity {
     private DriveResourceClient mDriveResourceClient;
     private GoogleSignInClient mGoogleSignInClient;
 
-    private static final int REQUEST_CODE_CREATOR = 2;
     private static final int REQUEST_CODE_SIGN_IN = 3;
     /** Create a new file and save it to Drive. */
     private void saveFileToDrive() {
@@ -141,7 +135,10 @@ public final class TakePhotoActivity extends ListeningActivity {
         createFile(image);
     }
 
+    private String mLongitude = "";
+    private String mLatitude = "";
     private void createFile(final Bitmap image) {
+        Toast.makeText(context,  mLocation.getLongitude() + "/" + mLocation.getLatitude(), Toast.LENGTH_SHORT).show();
         // [START create_file]
         final Task<DriveFolder> rootFolderTask = mDriveResourceClient.getRootFolder();
         final Task<DriveContents> createContentsTask = mDriveResourceClient.createContents();
@@ -153,16 +150,45 @@ public final class TakePhotoActivity extends ListeningActivity {
                         DriveContents contents = createContentsTask.getResult();
                         OutputStream outputStream = contents.getOutputStream();
                         ByteArrayOutputStream bitmapStream = new ByteArrayOutputStream();
-                        image.compress(Bitmap.CompressFormat.PNG, 100, bitmapStream);
+
+
+
+                        String root = Environment.getExternalStorageDirectory().toString();
+                        File myDir = new File(root + "/saved_images");
+                        myDir.mkdirs();
+                        String nameFile = "testSelf.jpg";
+                        File file = new File(myDir, nameFile);
+                        if (file.exists ()) file.delete();
+                        try {
+                            FileOutputStream out = new FileOutputStream(file);
+                            image.compress(Bitmap.CompressFormat.JPEG, 100, out);
+//
+                            out.close();
+                            showMessage("Saved picture......."+file.getCanonicalPath());
+                        } catch (IOException e){
+                            Log.d("CAMERA file", e.getMessage());
+                        }
+
+                         Uri uri = Uri.fromFile(file);
+                        Bitmap bm = ImageHelper.loadSizeLimitedBitmapFromUri(
+                                uri, getContentResolver());
+
+                        bm.compress(Bitmap.CompressFormat.PNG, 100, bitmapStream);
+//                detecting = false;
+                        // If image is selected successfully, set the image URI and bitmap.
+
+
                         try {
                             outputStream.write(bitmapStream.toByteArray());
                         } catch (IOException e) {
                             Log.w(TAG, "Unable to write file contents.", e);
                         }
 
+
                         MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
                                 .setMimeType("image/jpeg")
-                                .setTitle("5555.png")
+                                .setTitle("hinhanh.png")
+                                .setDescription("kinh độ:" + mLongitude + " , vĩ độ:" + mLatitude)
                                 .setStarred(true)
                                 .build();
 
@@ -173,16 +199,14 @@ public final class TakePhotoActivity extends ListeningActivity {
                         new OnSuccessListener<DriveFile>() {
                             @Override
                             public void onSuccess(DriveFile driveFile) {
-                                showMessage("successful");
-                                finish();
+                                showReply("tải lên mạng thành công");
                             }
                         })
                 .addOnFailureListener(this, new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.e(TAG, "Unable to create file", e);
-                        showMessage("Fail");
-                        finish();
+                        showReply("tải lên mạng thành công");
                     }
                 });
         // [END create_file]
@@ -226,6 +250,30 @@ public final class TakePhotoActivity extends ListeningActivity {
                 break;
         }
     }
+
+    private final LocationListener mLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(final Location location) {
+            mLocation = location;
+            mLongitude = mLocation.getLongitude() + "";
+            mLatitude = mLocation.getLatitude() + "";
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
 
 
     @Override
@@ -279,6 +327,25 @@ public final class TakePhotoActivity extends ListeningActivity {
                 saveFileToDrive();
             }
         };
+
+        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
+                LOCATION_REFRESH_DISTANCE, mLocationListener);
 
     }
 

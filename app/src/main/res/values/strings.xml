@@ -4,9 +4,9 @@
     <!-- Emotion subscription key -->
     <!-- Please refer to https://www.projectoxford.ai/ to get your subscription key -->
     <!-- If you have one subscription key, you can add it here to use the service -->
-    <string name="subscription_key_emotion">4f29ca76174649f6bc97d7f7cb091c59</string>
+    <string name="subscription_key_emotion">a3b89eb7605b4d0e8ac2ac4821b6fa10</string>
 
-    <string name="subscription_key">a3b89eb7605b4d0e8ac2ac4821b6fa10</string>
+    <string name="subscription_key">4f29ca76174649f6bc97d7f7cb091c59</string>
     <string name="endpoint">https://westcentralus.api.cognitive.microsoft.com/face/v1.0</string>
 
     <!-- Main activity -->
